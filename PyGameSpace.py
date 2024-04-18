@@ -23,6 +23,12 @@ FAUST_SIZE = 35  # Größe des Faust-Bildes
 MEISTERSCHALE_SIZE = 63  # Größe der Meisterschale
 MEISTERSCHALE_INTERVAL = 5  # Intervall, in dem eine Meisterschale erscheint
 
+# Geschwindigkeitszunahme der Feinde
+enemy_speed_increment = 0.001  
+
+# Intervallverringerung für das Erscheinen neuer Feinde
+enemy_interval_decrement = 0.01 
+
 # Spielbildschirm initialisieren
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Weiche den Feinden aus")
@@ -79,6 +85,9 @@ def show_instructions():
 
 # Hauptspiel
 def main():
+    global ENEMY_SPEED  # Zugriff auf die globale Variable ENEMY_SPEED
+    global ENEMY_INTERVAL  # Zugriff auf die globale Variable ENEMY_INTERVAL
+
     player = pygame.Rect(WIDTH // 2 - PLAYER_WIDTH // 2, HEIGHT // 4 * 3 - PLAYER_HEIGHT // 2, PLAYER_WIDTH, PLAYER_HEIGHT)
     enemies = []
     projectiles = []
@@ -107,7 +116,7 @@ def main():
 
             for enemy in enemies:
                 enemy['rect'].y += ENEMY_SPEED
-            if random.randint(0, ENEMY_INTERVAL) == 0:
+            if random.randint(0, int(ENEMY_INTERVAL)) == 0:
                 x = random.randint(0, WIDTH - ENEMY_SIZE)
                 # Überprüfen, ob der Abstand zu anderen Feinden groß genug ist
                 overlap = True
@@ -180,6 +189,14 @@ def main():
             screen.blit(player_image, player)
             [screen.blit(enemy['image'], enemy['rect'].topleft) for enemy in enemies]
             [screen.blit(faust_image, projectile.topleft) for projectile in projectiles]
+
+            # Geschwindigkeit der Feinde erhöhen
+            ENEMY_SPEED += enemy_speed_increment
+            # Intervall zwischen dem Erscheinen neuer Feinde verkürzen
+            ENEMY_INTERVAL -= enemy_interval_decrement
+            # Begrenzen, damit die Geschwindigkeit nicht ins Unendliche steigt und das Intervall nicht negativ wird
+            ENEMY_SPEED = min(10, ENEMY_SPEED)
+            ENEMY_INTERVAL = max(10, ENEMY_INTERVAL)
 
         if game_over:
             # Transparenten Hintergrund 

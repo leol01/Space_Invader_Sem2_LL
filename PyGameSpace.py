@@ -4,8 +4,8 @@ import random
 # Initialisierung von Pygame
 pygame.init()
 
-# Bildschirmabmessungen
-WIDTH, HEIGHT = 600, 400
+# Neue Bildschirmabmessungen
+WIDTH, HEIGHT = 999, 562  # Neue Abmessungen für das Spielfeld
 
 # Farben
 WHITE = (255, 255, 255)
@@ -13,7 +13,7 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 
 # Spieler Eigenschaften
-PLAYER_WIDTH, PLAYER_HEIGHT = 50, 20
+PLAYER_WIDTH, PLAYER_HEIGHT = 100, 47  # Spielergröße
 PLAYER_SPEED = 5
 
 # Gegner Eigenschaften
@@ -21,13 +21,18 @@ ENEMY_WIDTH, ENEMY_HEIGHT = 30, 30
 ENEMY_SPEED = 3
 ENEMY_INTERVAL = 60  # Intervall, in dem ein neuer Gegner erscheint
 
+# Hintergrundbild laden und anpassen
+background = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Neckarstadion.png")
+background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+
+# Spielerbild laden und anpassen
+player_image = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/VfB_Wappen.png")
+player_image = pygame.transform.scale(player_image, (PLAYER_WIDTH, PLAYER_HEIGHT))
+
 # Initialisierung des Bildschirms
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Weiche den Feinden aus")
 clock = pygame.time.Clock()
-
-# Hintergrundbild laden
-background = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Neckarstadion.png")
 
 # Funktion zum Erzeugen eines neuen Gegners
 def create_enemy():
@@ -40,9 +45,9 @@ def move_enemies(enemies):
     for enemy in enemies:
         enemy.y += ENEMY_SPEED
 
-# Funktion zum Zeichnen des Spielers
+# Funktion zum Zeichnen der Spieler
 def draw_player(player):
-    pygame.draw.rect(screen, RED, player)
+    screen.blit(player_image, (player.x, player.y))
 
 # Funktion zum Zeichnen der Gegner
 def draw_enemies(enemies):
@@ -63,14 +68,14 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            player.x -= PLAYER_SPEED
-        if keys[pygame.K_RIGHT]:
-            player.x += PLAYER_SPEED
+        # Spielerbewegung basierend auf der Mausposition aktualisieren
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        player.x = mouse_x - PLAYER_WIDTH // 2
+        player.y = mouse_y - PLAYER_HEIGHT // 2
 
         # Begrenze den Spieler auf den Bildschirm
         player.x = max(0, min(player.x, WIDTH - PLAYER_WIDTH))
+        player.y = max(0, min(player.y, HEIGHT - PLAYER_HEIGHT))
 
         # Bewege die Gegner und füge neue hinzu
         move_enemies(enemies)

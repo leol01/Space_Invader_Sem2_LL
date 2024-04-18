@@ -11,6 +11,8 @@ WIDTH, HEIGHT = 999, 562
 # Farben definieren
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
+GRAY = (128, 128, 128)
+TRANSPARENT_RED = (150, 0, 0, 50)  # Transparentes Rot für den Hintergrund
 
 # Spieler- und Gegner-Eigenschaften festlegen
 PLAYER_WIDTH, PLAYER_HEIGHT = 100, 47
@@ -24,10 +26,15 @@ MEISTERSCHALE_SIZE = 63  # Größe der Meisterschale
 MEISTERSCHALE_INTERVAL = 5  # Intervall, in dem eine Meisterschale erscheint
 
 # Geschwindigkeitszunahme der Feinde
-enemy_speed_increment = 0.001  
+enemy_speed_increment = 0.0001  
 
 # Intervallverringerung für das Erscheinen neuer Feinde
 enemy_interval_decrement = 0.01 
+
+# DFB-Pokal und Champions-League-Pokal Eigenschaften
+POKAL_SIZE = 50
+POKAL_SPEED = 2
+POKAL_INTERVAL = 10  # Intervall, in dem ein neuer Pokal erscheint
 
 # Spielbildschirm initialisieren
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -35,20 +42,22 @@ pygame.display.set_caption("Weiche den Feinden aus")
 clock = pygame.time.Clock()
 
 # Bilder laden und skalieren
-background_image = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Neckarstadion.png")
-player_image = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/VfB_Wappen.png")
-faust_image = pygame.transform.scale(pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Faust.png").convert_alpha(), (FAUST_SIZE, FAUST_SIZE))
-meisterschale_image = pygame.transform.scale(pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Meisterschale.png").convert_alpha(), (MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE))
-stern_image = pygame.transform.scale(pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Stern.png").convert_alpha(), (15, 15))
+background_image = pygame.image.load("Neckarstadion.png")
+player_image = pygame.image.load("VfB_Wappen.png")
+faust_image = pygame.transform.scale(pygame.image.load("Faust.png").convert_alpha(), (FAUST_SIZE, FAUST_SIZE))
+meisterschale_image = pygame.transform.scale(pygame.image.load("Meisterschale.png").convert_alpha(), (MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE))
+stern_image = pygame.transform.scale(pygame.image.load("Stern.png").convert_alpha(), (15, 15))
+dfb_pokal_image = pygame.transform.scale(pygame.image.load("DFB_Pokal.png").convert_alpha(), (POKAL_SIZE, POKAL_SIZE))
+cl_pokal_image = pygame.transform.scale(pygame.image.load("CL_Pokal.png").convert_alpha(), (POKAL_SIZE, POKAL_SIZE))
 enemy_images = [
-    pygame.transform.scale(pygame.image.load(f"C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/{team}_Wappen.png").convert_alpha(), (ENEMY_SIZE, ENEMY_SIZE)) for team in ["FCB", "BVB", "KSC", "SVK", "Hertha", "Köln"]
+    pygame.transform.scale(pygame.image.load(f"{team}_Wappen.png").convert_alpha(), (ENEMY_SIZE, ENEMY_SIZE)) for team in ["FCB", "BVB", "KSC", "SVK", "Hertha", "Köln"]
 ]
 player_image = pygame.transform.scale(player_image, (PLAYER_WIDTH, PLAYER_HEIGHT))
 
 # Einleitung anzeigen
 def show_instructions():
     screen.blit(background_image, (0, 0))
-    font = pygame.font.Font("C:/Windows/Fonts/arial.ttf", 18)
+    font = pygame.font.Font(None, 18)
     
     # Transparenten Hintergrund für die Spielregeln erstellen
     transparent_surface = pygame.Surface((5000, 5000), pygame.SRCALPHA)
@@ -74,7 +83,7 @@ def show_instructions():
     start_button_rect = pygame.Rect(WIDTH // 2 - PLAYER_WIDTH // 2, HEIGHT // 2 + 50, PLAYER_WIDTH, PLAYER_HEIGHT)
     pygame.draw.rect(screen, RED, start_button_rect)
     screen.blit(player_image, start_button_rect)
-    font = pygame.font.Font("C:/Windows/Fonts/arial.ttf", 33)
+    font = pygame.font.Font(None, 33)
     text = font.render("Hier klicken für START", True, RED)
     text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 30))
     screen.blit(text, text_rect)
@@ -83,10 +92,32 @@ def show_instructions():
 
     return start_button_rect
 
+# DFB-Pokal und Champions-League-Pokal spawnen
+def spawn_pokal():
+    pokal_type = random.choice(["dfb", "cl"])
+    x = random.randint(0, WIDTH - POKAL_SIZE)
+    pokal_rect = pygame.Rect(x, 0 - POKAL_SIZE, POKAL_SIZE, POKAL_SIZE)
+    if pokal_type == "dfb":
+        return {'rect': pokal_rect, 'image': dfb_pokal_image, 'type': 'dfb'}
+    else:
+        return {'rect': pokal_rect, 'image': cl_pokal_image, 'type': 'cl'}
+
+pokals = []
+last_pokal_time = time.time()
+
+# Funktion zum Überprüfen und Anpassen der Position eines Elements, um Kollisionen zu vermeiden
+def avoid_collisions(new_rect, existing_rects):
+    for existing_rect in existing_rects:
+        if new_rect.colliderect(existing_rect):
+            # Wenn Kollision, versuche neue Position
+            new_rect.y -= 2 * new_rect.height  # Beispielanpassung für vertikale Position
+            return avoid_collisions(new_rect, existing_rects)  # Rekursiver Aufruf
+    return new_rect
+
+
 # Hauptspiel
 def main():
-    global ENEMY_SPEED  # Zugriff auf die globale Variable ENEMY_SPEED
-    global ENEMY_INTERVAL  # Zugriff auf die globale Variable ENEMY_INTERVAL
+    global ENEMY_SPEED, ENEMY_INTERVAL, pokals, last_pokal_time
 
     player = pygame.Rect(WIDTH // 2 - PLAYER_WIDTH // 2, HEIGHT // 4 * 3 - PLAYER_HEIGHT // 2, PLAYER_WIDTH, PLAYER_HEIGHT)
     enemies = []
@@ -95,10 +126,12 @@ def main():
     last_shot_time = time.time()
     last_meisterschale_time = time.time()
     meisterschaften = 0
+    extra_lives = 0
 
     running = True
     game_over = False
     game_over_time = None
+    last_shoot_time = 0  # Variable zur Verfolgung des letzten Schusszeitpunkts
     while running:
         screen.fill(WHITE)
         screen.blit(background_image, (0, 0))
@@ -106,13 +139,15 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:  # Schuss mit Leertaste
-                projectiles.append(pygame.Rect(player.centerx - FAUST_SIZE // 2, player.top - FAUST_SIZE, FAUST_SIZE, FAUST_SIZE))
-                last_shot_time = time.time()
 
         if not game_over:
             # Spielerbewegung mit Maus
             player.centerx, player.centery = max(PLAYER_WIDTH // 2, min(pygame.mouse.get_pos()[0], WIDTH - PLAYER_WIDTH // 2)), max(HEIGHT // 4, min(pygame.mouse.get_pos()[1], HEIGHT - PLAYER_HEIGHT // 2))
+
+            # Schuss mit Leertaste (maximal alle 0,5 Sekunden)
+            if pygame.key.get_pressed()[pygame.K_SPACE] and time.time() - last_shoot_time >= SHOOT_DELAY:
+                projectiles.append(pygame.Rect(player.centerx - FAUST_SIZE // 2, player.top - FAUST_SIZE, FAUST_SIZE, FAUST_SIZE))
+                last_shoot_time = time.time()
 
             for enemy in enemies:
                 enemy['rect'].y += ENEMY_SPEED
@@ -133,7 +168,7 @@ def main():
             for projectile in projectiles:
                 projectile.y -= PROJECTILE_SPEED
 
-            # Schuss des Spielers mit Mausklick
+            # Schuss des Spielers mit Mausklick (maximal alle 0,5 Sekunden)
             current_time = time.time()
             if current_time - last_shot_time >= SHOOT_DELAY:
                 if pygame.mouse.get_pressed()[0]:  # Wenn die linke Maustaste gedrückt wird
@@ -148,8 +183,21 @@ def main():
 
             # Kollisionserkennung mit dem Spieler für Feinde
             for enemy in enemies[:]:
-                if player.colliderect(enemy['rect']) and enemy['image'] != meisterschale_image:
-                    game_over = True
+                if player.colliderect(enemy['rect']) and enemy['image'] not in [meisterschale_image, dfb_pokal_image, cl_pokal_image]:
+                    if extra_lives > 0:
+                        extra_lives -= 1
+                        # Eliminiere alle Gegner auf dem Feld
+                        enemies.clear()
+                        # Bildschirm grau transparent machen
+                        transparent_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+                        transparent_surface.fill((128, 128, 128, 128))  # Grau mit 50% Transparenz
+                        screen.blit(transparent_surface, (0, 0))
+                        pygame.display.flip()
+                        time.sleep(0.5)  # Eine halbe Sekunde Pause für visuelles Feedback
+                    else:
+                        game_over = True
+
+
 
             # Kollisionserkennung mit der Faust für Feinde
             for projectile in projectiles[:]:
@@ -161,20 +209,33 @@ def main():
             # Meisterschale erscheinen lassen
             if current_time - last_meisterschale_time >= MEISTERSCHALE_INTERVAL:
                 x = random.randint(0, WIDTH - MEISTERSCHALE_SIZE)
-                enemies.append({'rect': pygame.Rect(x, 0 - MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE), 'image': meisterschale_image})
+                new_meisterschale_rect = pygame.Rect(x, 0 - MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE)
+                new_meisterschale_rect = avoid_collisions(new_meisterschale_rect, [enemy['rect'] for enemy in enemies])
+                enemies.append({'rect': new_meisterschale_rect, 'image': meisterschale_image})
                 last_meisterschale_time = current_time
 
+            # Pokal erscheinen lassen
+            if current_time - last_pokal_time >= POKAL_INTERVAL:
+                new_pokal = spawn_pokal()
+                new_pokal['rect'] = avoid_collisions(new_pokal['rect'], [enemy['rect'] for enemy in enemies] + [pokal['rect'] for pokal in pokals])
+                pokals.append(new_pokal)
+                last_pokal_time = current_time
+
+            # Bewegung und Kollisionserkennung der Pokale
+            for pokal in pokals[:]:
+                pokal['rect'].y += POKAL_SPEED
+                if player.colliderect(pokal['rect']):
+                    if pokal['type'] == 'dfb' or pokal['type'] == 'cl':
+                        extra_lives += 1
+                        pokals.remove(pokal)
+
             # Anzeige der Anzahl der Meisterschaften oben rechts
-            transparent_surface = pygame.Surface((600, 50), pygame.SRCALPHA)
-            transparent_surface.fill((0, 0, 0, 100))  # 128 für 50% Transparenz
-            screen.blit(transparent_surface, (763, 0))
             font = pygame.font.Font(None, 36)
             text = font.render(f"Meisterschaften: {meisterschaften}", True, RED)
             text_rect = text.get_rect(topright=(WIDTH - 10, 10))
             screen.blit(text, text_rect)
 
             # Anzeige der Sterne basierend auf der Anzahl der Meisterschaften
-
             if meisterschaften >= 20:
                 screen.blit(stern_image, (player.centerx - 35, player.top - 20))
             if meisterschaften >= 5:
@@ -186,9 +247,19 @@ def main():
             if meisterschaften >= 30:
                 screen.blit(stern_image, (player.centerx + 25, player.top - 20))
 
+
+            # Anzeige der gesammelten Pokale und des Extra-Lebens
+            text = font.render(f"Extra Leben: {extra_lives}", True, RED)
+            text_rect = text.get_rect(topright=(WIDTH - 10, 40))
+            screen.blit(text, text_rect)
+
+            for i in range(extra_lives):
+                screen.blit if i % 2 == 0 else cl_pokal_image, 
+
             screen.blit(player_image, player)
             [screen.blit(enemy['image'], enemy['rect'].topleft) for enemy in enemies]
             [screen.blit(faust_image, projectile.topleft) for projectile in projectiles]
+            [screen.blit(pokal['image'], pokal['rect'].topleft) for pokal in pokals]
 
             # Geschwindigkeit der Feinde erhöhen
             ENEMY_SPEED += enemy_speed_increment
@@ -211,6 +282,13 @@ def main():
                 game_over_time = time.time()
             if time.time() - game_over_time > 3:
                 running = False
+
+        # Stuttgart international anzeigen, wenn mindestens ein Extraleben vorhanden ist
+        if extra_lives > 0:
+            font = pygame.font.Font(None, 24)
+            text = font.render("Stuttgart International", True, GRAY)
+            text_rect = text.get_rect(midtop=(WIDTH // 2, 0))
+            screen.blit(text, text_rect)
 
         pygame.display.flip()
         clock.tick(60)

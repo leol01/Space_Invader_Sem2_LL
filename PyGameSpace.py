@@ -18,8 +18,10 @@ ENEMY_SIZE = 55
 ENEMY_SPEED = 3
 ENEMY_INTERVAL = 60  # Intervall, in dem ein neuer Gegner erscheint
 PROJECTILE_SPEED = 3  # Geschwindigkeit des Schusses
-SHOOT_DELAY = 5  # Schussverzögerung in Sekunden
+SHOOT_DELAY = 2  # Schussverzögerung in Sekunden
 FAUST_SIZE = 35  # Größe des Faust-Bildes
+MEISTERSCHALE_SIZE = 63  # Größe der Meisterschale
+MEISTERSCHALE_INTERVAL = 5  # Intervall, in dem eine Meisterschale erscheint
 
 # Spielbildschirm initialisieren
 screen = pygame.display.set_mode((WIDTH, HEIGHT))  # Spielbildschirm erstellen
@@ -31,6 +33,10 @@ background_image = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader
 player_image = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/VfB_Wappen.png")  # Spielerbild laden
 # Bild für das Schussobjekt laden und skalieren
 faust_image = pygame.transform.scale(pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Faust.png").convert_alpha(), (FAUST_SIZE, FAUST_SIZE))
+# Meisterschale laden und skalieren
+meisterschale_image = pygame.transform.scale(pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Meisterschale.png").convert_alpha(), (MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE))
+# Stern laden und skalieren
+stern_image = pygame.transform.scale(pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Stern.png").convert_alpha(), (15, 15))
 # Liste der Feindbilder mit transparentem Hintergrund
 enemy_images = [
     pygame.transform.scale(pygame.image.load(f"C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/{team}_Wappen.png").convert_alpha(), (ENEMY_SIZE, ENEMY_SIZE)) for team in ["FCB", "BVB", "KSC", "SVK", "Hertha", "Köln"]
@@ -46,6 +52,8 @@ def main():
     projectiles = []  # Liste für die Projektile initialisieren
 
     last_shot_time = time.time()  # Zeitpunkt des letzten Schusses initialisieren
+    last_meisterschale_time = time.time()  # Zeitpunkt des letzten Erscheinens der Meisterschale initialisieren
+    meisterschaften = 0  # Anzahl der Meisterschaften initialisieren
 
     running = True  # Flag für das Spiel initialisieren
     game_over = False  # Flag für Spielende initialisieren
@@ -80,18 +88,47 @@ def main():
                     projectiles.append(pygame.Rect(player.centerx - FAUST_SIZE // 2, player.top - FAUST_SIZE, FAUST_SIZE, FAUST_SIZE))  # Neues Projektil hinzufügen
                     last_shot_time = current_time  # Zeitpunkt des aktuellen Schusses aktualisieren
 
-            # Kollisionserkennung
+            # Kollisionserkennung mit dem Spieler für Meisterschaften
             for enemy in enemies[:]:  # Für jeden Gegner
-                for projectile in projectiles[:]:  # Für jedes Projektil
-                    if enemy['rect'].colliderect(projectile):  # Wenn Kollision zwischen Gegner und Projektil
-                        enemies.remove(enemy)  # Gegner entfernen
+                if player.colliderect(enemy['rect']) and enemy['image'] == meisterschale_image:  # Wenn Spieler die Meisterschale berührt
+                    meisterschaften += 1  # Anzahl der Meisterschaften erhöhen
+                    enemies.remove(enemy)  # Meisterschale entfernen
+
+            # Kollisionserkennung mit dem Spieler für Feinde
+            for enemy in enemies[:]:  # Für jeden Gegner
+                if player.colliderect(enemy['rect']) and enemy['image'] != meisterschale_image:  # Wenn Spieler einen Feind (nicht Meisterschale) berührt
+                    game_over = True  # Spiel als beendet markieren
+
+            # Kollisionserkennung mit der Faust für Feinde
+            for projectile in projectiles[:]:  # Für jedes Projektil
+                for enemy in enemies[:]:  # Für jeden Gegner
+                    if enemy['rect'].colliderect(projectile):  # Wenn Kollision zwischen Feind und Projektil
+                        enemies.remove(enemy)  # Feind entfernen
                         projectiles.remove(projectile)  # Projektil entfernen
 
-            # Kollisionserkennung mit dem Spieler
-            for enemy in enemies:  # Für jeden Gegner
-                if player.colliderect(enemy['rect']):  # Wenn Kollision zwischen Spieler und Gegner
-                    game_over = True  # Spiel als beendet markieren
-                    game_over_time = time.time()  # Zeitstempel für das Spielende setzen
+            # Meisterschale erscheinen lassen
+            if current_time - last_meisterschale_time >= MEISTERSCHALE_INTERVAL:  # Wenn Zeit für eine neue Meisterschale
+                x = random.randint(0, WIDTH - MEISTERSCHALE_SIZE)  # Zufällige X-Position für die Meisterschale
+                enemies.append({'rect': pygame.Rect(x, 0 - MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE, MEISTERSCHALE_SIZE), 'image': meisterschale_image})  # Meisterschale hinzufügen
+                last_meisterschale_time = current_time  # Zeitpunkt des aktuellen Erscheinens der Meisterschale aktualisieren
+
+            # Anzeige der Anzahl der Meisterschaften oben rechts
+            font = pygame.font.Font(None, 36)  # Schriftart für die Anzeige der Meisterschaften festlegen
+            text = font.render(f"Meisterschaften: {meisterschaften}", True, RED)  # Meisterschaften-Text rendern
+            text_rect = text.get_rect(topright=(WIDTH - 10, 10))  # Position des Texts festlegen
+            screen.blit(text, text_rect)  # Text auf den Bildschirm zeichnen
+
+            # Anzeige der Sterne basierend auf der Anzahl der Meisterschaften
+            if meisterschaften >= 20:
+                screen.blit(stern_image, (player.centerx - 35, player.top - 20))
+            if meisterschaften >= 5:
+                 screen.blit(stern_image, (player.centerx - 20, player.top - 20))
+            if meisterschaften >= 3:
+                 screen.blit(stern_image, (player.centerx -5 , player.top - 20))
+            if meisterschaften >= 10:
+                 screen.blit(stern_image, (player.centerx + 10, player.top - 20))
+            if meisterschaften >= 30:
+                screen.blit(stern_image, (player.centerx + 25, player.top - 20))
 
             # Zeichne Spieler und Gegner
             screen.blit(player_image, player)  # Spieler zeichnen
@@ -103,6 +140,8 @@ def main():
             text = font.render("Game Over!", True, RED)  # "Game Over!"-Text rendern
             text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))  # Position des Texts festlegen
             screen.blit(text, text_rect)  # Text auf den Bildschirm zeichnen
+            if game_over_time is None:
+                game_over_time = time.time()  # Zeitstempel für das Spielende setzen
             if time.time() - game_over_time > 3:  # Wenn 3 Sekunden vergangen sind seit dem Spielende
                 running = False  # Spiel beenden
 

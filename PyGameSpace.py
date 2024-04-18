@@ -42,24 +42,25 @@ player_image = pygame.transform.scale(player_image, (PLAYER_WIDTH, PLAYER_HEIGHT
 # Einleitung anzeigen
 def show_instructions():
     screen.blit(background_image, (0, 0))
-    font = pygame.font.Font("C:/Windows/Fonts/arial.ttf", 20)
+    font = pygame.font.Font("C:/Windows/Fonts/arial.ttf", 18)
     
     # Transparenten Hintergrund für die Spielregeln erstellen
-    transparent_surface = pygame.Surface((WIDTH - 200, 300), pygame.SRCALPHA)
-    transparent_surface.fill((0, 0, 0, 128))  # 128 für 50% Transparenz
-    screen.blit(transparent_surface, (10, 90))
+    transparent_surface = pygame.Surface((5000, 5000), pygame.SRCALPHA)
+    transparent_surface.fill((0, 0, 0, 163))  # 128 für 50% Transparenz
+    screen.blit(transparent_surface, (-100, -100))
     
     instructions = [
         "Spielregeln:",
-        "1. Bewegen Sie den Spieler mit der Maus.",
-        "2. Klicken Sie die linke Maustaste oder drücken Sie die Leertaste, um zu schießen.",
-        "3. Berühren Sie die Meisterschale, um eine Meisterschaft zu gewinnen." ,
+        "1. Bewegen Sie das VfB - Wappem mit der Maus.",
+        "2. Klicken Sie die linke Maustaste oder drücken Sie die Leertaste, um andere Vereine zu schlagen.",
+        "3. Berühren Sie die Meisterschale, um eine Meisterschaft zu gewinnen.",
         "    Die Anzahl der gewonnenen Meisterschaften wird rechts oben angezeigt, sowie durch die Sterne über dem Wappen.",
-        "4. Berühren Sie einen Gegner, um das Spiel zu beenden."
+        "4. Berühren Sie einen Gegner, so haben sie das Spiel verloren.",
+        "5. Können Sie den DFB- oder den CL- Pokal gewinnen, so erhalten sie ein Extraleben."
     ]
     y = 100
     for line in instructions:
-        text = font.render(line, True, RED)
+        text = font.render(line, True, WHITE)
         text_rect = text.get_rect(left=WIDTH - 980, centery=y-80)
         screen.blit(text, text_rect)
         y += 30
@@ -67,8 +68,8 @@ def show_instructions():
     start_button_rect = pygame.Rect(WIDTH // 2 - PLAYER_WIDTH // 2, HEIGHT // 2 + 50, PLAYER_WIDTH, PLAYER_HEIGHT)
     pygame.draw.rect(screen, RED, start_button_rect)
     screen.blit(player_image, start_button_rect)
-    font = pygame.font.Font("C:/Windows/Fonts/arial.ttf", 24)
-    text = font.render("Hier klicken um zu starten", True, WHITE)
+    font = pygame.font.Font("C:/Windows/Fonts/arial.ttf", 33)
+    text = font.render("Hier klicken für START", True, RED)
     text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 30))
     screen.blit(text, text_rect)
 
@@ -96,6 +97,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:  # Schuss mit Leertaste
+                projectiles.append(pygame.Rect(player.centerx - FAUST_SIZE // 2, player.top - FAUST_SIZE, FAUST_SIZE, FAUST_SIZE))
+                last_shot_time = time.time()
 
         if not game_over:
             # Spielerbewegung mit Maus
@@ -105,18 +109,25 @@ def main():
                 enemy['rect'].y += ENEMY_SPEED
             if random.randint(0, ENEMY_INTERVAL) == 0:
                 x = random.randint(0, WIDTH - ENEMY_SIZE)
-                enemies.append({'rect': pygame.Rect(x, 0 - ENEMY_SIZE, ENEMY_SIZE, ENEMY_SIZE), 'image': random.choice(enemy_images)})
+                # Überprüfen, ob der Abstand zu anderen Feinden groß genug ist
+                overlap = True
+                while overlap:
+                    overlap = False
+                    new_enemy_rect = pygame.Rect(x, 0 - ENEMY_SIZE, ENEMY_SIZE, ENEMY_SIZE)
+                    for existing_enemy in enemies:
+                        if new_enemy_rect.colliderect(existing_enemy['rect']):
+                            overlap = True
+                            x = random.randint(0, WIDTH - ENEMY_SIZE)
+                            break
+                enemies.append({'rect': new_enemy_rect, 'image': random.choice(enemy_images)})
 
             for projectile in projectiles:
                 projectile.y -= PROJECTILE_SPEED
 
-            # Schuss des Spielers
+            # Schuss des Spielers mit Mausklick
             current_time = time.time()
             if current_time - last_shot_time >= SHOOT_DELAY:
                 if pygame.mouse.get_pressed()[0]:  # Wenn die linke Maustaste gedrückt wird
-                    projectiles.append(pygame.Rect(player.centerx - FAUST_SIZE // 2, player.top - FAUST_SIZE, FAUST_SIZE, FAUST_SIZE))
-                    last_shot_time = current_time
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:  # Wenn die Leertaste gedrückt wird
                     projectiles.append(pygame.Rect(player.centerx - FAUST_SIZE // 2, player.top - FAUST_SIZE, FAUST_SIZE, FAUST_SIZE))
                     last_shot_time = current_time
 
@@ -145,12 +156,16 @@ def main():
                 last_meisterschale_time = current_time
 
             # Anzeige der Anzahl der Meisterschaften oben rechts
+            transparent_surface = pygame.Surface((600, 50), pygame.SRCALPHA)
+            transparent_surface.fill((0, 0, 0, 100))  # 128 für 50% Transparenz
+            screen.blit(transparent_surface, (763, 0))
             font = pygame.font.Font(None, 36)
             text = font.render(f"Meisterschaften: {meisterschaften}", True, RED)
             text_rect = text.get_rect(topright=(WIDTH - 10, 10))
             screen.blit(text, text_rect)
 
             # Anzeige der Sterne basierend auf der Anzahl der Meisterschaften
+
             if meisterschaften >= 20:
                 screen.blit(stern_image, (player.centerx - 35, player.top - 20))
             if meisterschaften >= 5:
@@ -167,6 +182,10 @@ def main():
             [screen.blit(faust_image, projectile.topleft) for projectile in projectiles]
 
         if game_over:
+            # Transparenten Hintergrund 
+            transparent_surface = pygame.Surface((5000, 5000), pygame.SRCALPHA)
+            transparent_surface.fill((0, 0, 0, 163))  # 128 für 50% Transparenz
+            screen.blit(transparent_surface, (-100, -100))
             font = pygame.font.Font(None, 72)
             text = font.render("Game Over!", True, RED)
             text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))

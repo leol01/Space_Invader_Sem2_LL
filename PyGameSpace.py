@@ -84,7 +84,7 @@ def main():
             # Spielerbewegung mit Maussteuerung
             mouse_x, mouse_y = pygame.mouse.get_pos()
             player.centerx = max(PLAYER_WIDTH // 2, min(mouse_x, WIDTH - PLAYER_WIDTH // 2))  # Begrenze nach rechts und links
-            player.centery = max(HEIGHT // 4, min(mouse_y, HEIGHT))  # Begrenze nach unten, aber nicht nach oben
+            player.centery = max(HEIGHT // 4, min(mouse_y, HEIGHT- ((PLAYER_HEIGHT/2))))  # Begrenze nach unten, aber nicht nach oben
 
             # Bewege die Gegner und füge neue hinzu
             move_enemies(enemies)

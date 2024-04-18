@@ -26,6 +26,9 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Weiche den Feinden aus")
 clock = pygame.time.Clock()
 
+# Hintergrundbild laden
+background = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/Neckarstadion.png")
+
 # Funktion zum Erzeugen eines neuen Gegners
 def create_enemy():
     x = random.randint(0, WIDTH - ENEMY_WIDTH)
@@ -53,7 +56,8 @@ def main():
 
     running = True
     while running:
-        screen.fill(WHITE)
+        # Hintergrund zeichnen
+        screen.blit(background, (0, 0))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

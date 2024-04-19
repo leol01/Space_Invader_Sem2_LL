@@ -1,6 +1,10 @@
+from ast import Import
 import pygame
 import random
 import time
+import csv
+import os 
+import sys
 
 # Initialisierung von Pygame
 pygame.init()
@@ -54,10 +58,11 @@ enemy_images = [
 ]
 player_image = pygame.transform.scale(player_image, (PLAYER_WIDTH, PLAYER_HEIGHT))
 
-# Einleitung anzeigen
+
+
 def show_instructions():
     screen.blit(background_image, (0, 0))
-    font = pygame.font.Font(None, 18)
+    font = pygame.font.Font(None, 24)
     
     # Transparenten Hintergrund für die Spielregeln erstellen
     transparent_surface = pygame.Surface((5000, 5000), pygame.SRCALPHA)
@@ -75,9 +80,17 @@ def show_instructions():
     ]
     y = 100
     for line in instructions:
-        text = font.render(line, True, WHITE)
-        text_rect = text.get_rect(left=WIDTH - 980, centery=y-80)
-        screen.blit(text, text_rect)
+        if "Spielregeln:" in line:
+            # Rendern des Textes ohne Unterstreichung
+            text = font.render(line, True, WHITE)
+            text_rect = text.get_rect(left=WIDTH - 980, centery=y-80)
+            # Unterstreichen des gerenderten Textes
+            pygame.draw.rect(text, WHITE, text.get_rect(topleft=(0, text.get_height() - 2)), 0)
+            screen.blit(text, text_rect)
+        else:
+            text = font.render(line, True, WHITE)
+            text_rect = text.get_rect(left=WIDTH - 980, centery=y-80)
+            screen.blit(text, text_rect)
         y += 30
     
     start_button_rect = pygame.Rect(WIDTH // 2 - PLAYER_WIDTH // 2, HEIGHT // 2 + 50, PLAYER_WIDTH, PLAYER_HEIGHT)
@@ -91,6 +104,7 @@ def show_instructions():
     pygame.display.flip()
 
     return start_button_rect
+
 
 # DFB-Pokal und Champions-League-Pokal spawnen
 def spawn_pokal():
@@ -114,7 +128,99 @@ def avoid_collisions(new_rect, existing_rects):
             return avoid_collisions(new_rect, existing_rects)  # Rekursiver Aufruf
     return new_rect
 
+def get_end_game_input(screen, clock, meisterschaften):
+    font = pygame.font.Font(None, 48)  # Größere Schrift für den Namen
+    input_box = pygame.Rect(10, 200, 370, 50)  # Anpassung der Position und Größe des Eingabefelds
+    color_active = pygame.Color('darkred')  # Dunkelrote Farbe für den aktiven Rahmen
+    color_passive = pygame.Color('darkred')  # Dunkelrote Farbe für den inaktiven Rahmen
+    color = color_passive
+    user_text = ''
+    active = True
+    running = True
 
+    # Dunklerer grauer Farbton
+    gray_color = (9, 9, 9)
+    transparent_surface = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
+    transparent_surface.fill((gray_color[0], gray_color[1], gray_color[2], 163))  # Dunklerer grauer Hintergrund mit Transparenz
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if active:
+                    if event.key == pygame.K_RETURN:
+                        return user_text
+                    elif event.key == pygame.K_BACKSPACE:
+                        user_text = user_text[:-1]
+                    else:
+                        user_text += event.unicode
+
+        screen.blit(background_image, (0, 0))  # Hintergrundbild zeichnen
+
+        # Hintergrund mit Transparenz zeichnen
+        screen.blit(transparent_surface, (0, 0))
+
+        if active:
+            color = color_active
+        else:
+            color = color_passive
+
+        # Render den Text
+        text = font.render('Gib Deinen Namen ein:', True, (255, 255, 255))  # Dunkelrot
+        text_rect = text.get_rect(topleft=(10, 150))  # Positionierung des Textes
+        screen.blit(text, text_rect)
+
+        pygame.draw.rect(screen, color, input_box, 3)  # Änderung der Rahmenstärke und Farbe
+        text_surface = font.render(user_text, True, (255, 255, 255))  # Dunkelrot
+        screen.blit(text_surface, (input_box.x+5, input_box.y+5))
+        input_box.w = max(370, text_surface.get_width()+10)  # Begrenzung der Breite des Eingabefelds
+
+        # Anzeige der Anzahl der Meisterschaften
+        font_meisterschaften = pygame.font.Font(None, 64)  # Größere Schrift für die Meisterschaften
+        text_meisterschaften = font_meisterschaften.render(f"Gewonnene Meisterschaften: {meisterschaften}", True, (255, 255, 255))  # Dunkelrot
+        text_rect_meisterschaften = text_meisterschaften.get_rect(midtop=(screen.get_width() // 2, 10))  # Zentrierung des Textes
+        screen.blit(text_meisterschaften, text_rect_meisterschaften)
+
+        # Anzeige des VfB Wappens ganz unten rechts
+        vfb_wappen_image = pygame.image.load("C:/Users/leo.leberer/Desktop/Space_Invader_Sem2_LL/VfB_Wappen_groß.png").convert_alpha()
+
+        # Wappen verkleinern
+        vfb_wappen_image = pygame.transform.scale(vfb_wappen_image, (84, 84))
+        wappen_rect = vfb_wappen_image.get_rect(bottomright=(screen.get_width() - 10, screen.get_height() - 10))
+        screen.blit(vfb_wappen_image, wappen_rect)
+
+        # Anzeige des Meisterschaftsbildes
+        screen.blit(meisterschale_image, ((screen.get_width() // 2 - meisterschale_image.get_width() // 2) - 380, 0))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+def write_to_csv(data, filename):
+    try:
+        file_exists = os.path.isfile(filename)
+        with open(filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            if not file_exists:  # Wenn die Datei neu erstellt wird, füge eine Kopfzeile hinzu
+                writer.writerow(['Name', 'Meisterschaften'])
+            writer.writerows(data)
+        print("Daten wurden erfolgreich in die CSV-Datei geschrieben.")
+    except Exception as e:
+        print("Fehler beim Schreiben in die CSV-Datei:", e)
+
+def read_from_csv(filename):
+    try:
+        with open(filename, mode='r') as file:
+            reader = csv.reader(file)
+            data = [row for row in reader]  # Lies alle Zeilen aus der CSV-Datei
+        return data
+    except Exception as e:
+        print("Fehler beim Lesen der CSV-Datei:", e)
+        return None
+
+            
 # Hauptspiel
 def main():
     global ENEMY_SPEED, ENEMY_INTERVAL, pokals, last_pokal_time
@@ -139,6 +245,28 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+        
+
+        if game_over:
+            # Transparenten Hintergrund 
+            transparent_surface = pygame.Surface((5000, 5000), pygame.SRCALPHA)
+            transparent_surface.fill((0, 0, 0, 163))  # 128 für 50% Transparenz
+            screen.blit(transparent_surface, (-100, -100))
+            font = pygame.font.Font(None, 72)
+            text = font.render("Game Over ... win Stuttgart!", True, (128, 0, 0))
+            text_rect = text.get_rect(center=(WIDTH // 2, (HEIGHT // 2) - 100))
+            screen.blit(text, text_rect)
+            if game_over_time is None:
+                game_over_time = time.time()
+            if time.time() - game_over_time > 3:
+                running = False
+                # Nachdem das Spiel vorbei ist, rufe die Funktion für die Namenseingabe auf
+                player_name = get_end_game_input(screen, clock, meisterschaften)
+                # Verwende den Namen, um etwas zu tun, z.B. in eine CSV-Datei zu schreiben
+                write_to_csv([[player_name, meisterschaften]], "deine_datei.csv")
+                print("Der Spielername ist:", player_name)
+
 
         if not game_over:
             # Spielerbewegung mit Maus
@@ -269,19 +397,16 @@ def main():
             ENEMY_SPEED = min(10, ENEMY_SPEED)
             ENEMY_INTERVAL = max(10, ENEMY_INTERVAL)
 
+        
         if game_over:
-            # Transparenten Hintergrund 
-            transparent_surface = pygame.Surface((5000, 5000), pygame.SRCALPHA)
-            transparent_surface.fill((0, 0, 0, 163))  # 128 für 50% Transparenz
-            screen.blit(transparent_surface, (-100, -100))
-            font = pygame.font.Font(None, 72)
-            text = font.render("Game Over!", True, RED)
-            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-            screen.blit(text, text_rect)
-            if game_over_time is None:
-                game_over_time = time.time()
-            if time.time() - game_over_time > 3:
-                running = False
+                if game_over_time is None:
+                    game_over_time = time.time()
+                if time.time() - game_over_time > 3:
+                    running = False  # Setze den Zustand des Spiels auf False, um die Schleife zu beenden
+                    player_name = get_end_game_input(screen, clock, meisterschaften)
+                    if player_name:
+                        write_to_csv([[player_name, meisterschaften]], "spieler_statistiken.csv")  # Spielerdaten in CSV-Datei speichern
+
 
         # Stuttgart international anzeigen, wenn mindestens ein Extraleben vorhanden ist
         if extra_lives > 0:
@@ -293,17 +418,90 @@ def main():
         pygame.display.flip()
         clock.tick(60)
 
-    pygame.quit()
 
 if __name__ == "__main__":
-    start_button_rect = show_instructions()
-    waiting_for_start = True
-    while waiting_for_start:
+    instructions_button_rect = show_instructions()
+    running_instructions = True
+    while running_instructions:
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if start_button_rect.collidepoint(event.pos):
-                    waiting_for_start = False
             if event.type == pygame.QUIT:
-                pygame.quit()
-                waiting_for_start = False
+                running_instructions = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if instructions_button_rect.collidepoint(event.pos):
+                    running_instructions = False
+    
     main()
+
+
+
+
+
+
+
+import pygame
+import csv
+
+# Initialisierung von Pygame
+pygame.init()
+
+# Definieren der Bildschirmgröße
+WIDTH, HEIGHT = 999, 562
+
+# Hintergrundbild laden
+background_image = pygame.image.load("Neckarstadion.png")
+background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+
+# Fenster erstellen
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Spielergebnisse")
+
+# Funktion zum Lesen von Daten aus der CSV-Datei
+def read_from_csv(filename):
+    try:
+        with open(filename, mode='r') as file:
+            reader = csv.reader(file)
+            # Überspringe die erste Zeile, die die Spaltenüberschriften enthält
+            next(reader)
+            data = [row for row in reader]  # Lies alle folgenden Zeilen aus der CSV-Datei
+        return data
+    except Exception as e:
+        print("Fehler beim Lesen der CSV-Datei:", e)
+        return None
+
+
+# Funktion zum Anzeigen der Spielergebnisse im Fenster
+def show_player_results(data):
+    if data:
+        # Sortiere die Daten nach Meisterschaften
+        sorted_data = sorted(data, key=lambda x: int(x[1]), reverse=True)
+
+        # Schleife durch die sortierten Daten und zeige sie an
+        for i, row in enumerate(sorted_data):
+            # Zeige die Daten an
+            font = pygame.font.Font(None, 36)
+            text_surface = font.render(f"{i+1}. {row[0]} - {row[1]} Meistertitel", True, (100, 0, 0))
+            screen.blit(text_surface, (10, 5 + i * 40))  # Position des Textes auf dem Bildschirm
+    else:
+        print("Fehler beim Lesen der Spielergebnisse aus der CSV-Datei.")
+
+# Lese die Daten aus der CSV-Datei
+player_data = read_from_csv("deine_datei.csv")
+
+# Hauptprogrammschleife
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Hintergrundbild zeichnen
+    screen.blit(background_image, (0, 0))
+
+    # Spielergebnisse anzeigen
+    show_player_results(player_data)
+
+    # Bildschirm aktualisieren
+    pygame.display.flip()
+
+# Pygame beenden
+pygame.quit()

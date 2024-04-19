@@ -17,9 +17,9 @@ TRANSPARENT_RED = (150, 0, 0, 50)  # Transparentes Rot für den Hintergrund
 # Spieler- und Gegner-Eigenschaften festlegen
 PLAYER_WIDTH, PLAYER_HEIGHT = 100, 47
 ENEMY_SIZE = 55
-ENEMY_SPEED = 3
+ENEMY_SPEED = 2
 ENEMY_INTERVAL = 60  # Intervall, in dem ein neuer Gegner erscheint
-PROJECTILE_SPEED = 3  # Geschwindigkeit des Schusses
+PROJECTILE_SPEED = 2  # Geschwindigkeit des Schusses
 SHOOT_DELAY = 0.5  # Schussverzögerung in Sekunden
 FAUST_SIZE = 35  # Größe des Faust-Bildes
 MEISTERSCHALE_SIZE = 63  # Größe der Meisterschale
@@ -33,7 +33,7 @@ enemy_interval_decrement = 0.01
 
 # DFB-Pokal und Champions-League-Pokal Eigenschaften
 POKAL_SIZE = 50
-POKAL_SPEED = 2
+POKAL_SPEED = 4
 POKAL_INTERVAL = 10  # Intervall, in dem ein neuer Pokal erscheint
 
 # Spielbildschirm initialisieren

@@ -411,7 +411,7 @@ def main():
         # Stuttgart international anzeigen, wenn mindestens ein Extraleben vorhanden ist
         if extra_lives > 0:
             font = pygame.font.Font(None, 24)
-            text = font.render("Stuttgart International", True, GRAY)
+            text = font.render("Stuttgart International !!! ", True, GRAY)
             text_rect = text.get_rect(midtop=(WIDTH // 2, 0))
             screen.blit(text, text_rect)
 
@@ -436,10 +436,9 @@ if __name__ == "__main__":
 
 
 
-
-
 import pygame
 import csv
+import sys
 
 # Initialisierung von Pygame
 pygame.init()
@@ -468,7 +467,6 @@ def read_from_csv(filename):
         print("Fehler beim Lesen der CSV-Datei:", e)
         return None
 
-
 # Funktion zum Anzeigen der Spielergebnisse im Fenster
 def show_player_results(data):
     if data:
@@ -484,21 +482,41 @@ def show_player_results(data):
     else:
         print("Fehler beim Lesen der Spielergebnisse aus der CSV-Datei.")
 
+# Funktion zum Zurücksetzen der Spielergebnisse
+def reset_scores():
+    with open("deine_datei.csv", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Spielername", "Meisterschaften"])  # Überschriften schreiben
+    pygame.quit()
+    sys.exit()
+
 # Lese die Daten aus der CSV-Datei
 player_data = read_from_csv("deine_datei.csv")
 
-# Hauptprogrammschleife
+# Schleife für das Hauptprogramm
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            # Überprüfen, ob die Maus über dem Zurücksetzen-Knopf liegt
+            if reset_button_rect.collidepoint(mouse_pos):
+                reset_scores()
 
     # Hintergrundbild zeichnen
     screen.blit(background_image, (0, 0))
 
     # Spielergebnisse anzeigen
     show_player_results(player_data)
+
+    # Knopf zum Zurücksetzen der Spielergebnisse zeichnen
+    font = pygame.font.Font(None, 28)
+    reset_text = font.render("Zurücksetzen der Spielstände", True, (255, 255, 255))
+    reset_button_width = reset_text.get_width() + 20  # Breite des Knopfes an die Textlänge anpassen
+    reset_button_rect = pygame.draw.rect(screen, (0, 100, 0), (WIDTH - reset_button_width, HEIGHT - 50, reset_button_width, 40))
+    screen.blit(reset_text, (WIDTH - reset_button_width + 10, HEIGHT - 40))
 
     # Bildschirm aktualisieren
     pygame.display.flip()

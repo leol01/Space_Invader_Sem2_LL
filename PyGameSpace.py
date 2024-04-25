@@ -61,7 +61,9 @@ dfb_pokal_image = pygame.transform.scale(pygame.image.load("DFB_Pokal.png").conv
 cl_pokal_image = pygame.transform.scale(pygame.image.load("CL_Pokal.png").convert_alpha(), (POKAL_SIZE, POKAL_SIZE))  # Champions-League-Pokalbild laden und skalieren
 enemy_images = [
     pygame.transform.scale(pygame.image.load(f"{team}_Wappen.png").convert_alpha(), (ENEMY_SIZE, ENEMY_SIZE)) for team in ["FCB", "BVB", "KSC", "SVK", "Hertha", "Köln"]
-]  # Feindebilder laden und skalieren
+]  
+
+# Feindebilder laden und skalieren
 player_image = pygame.transform.scale(player_image, (PLAYER_WIDTH, PLAYER_HEIGHT))  # Spielerbild skalieren
 
 
@@ -315,7 +317,7 @@ def main():
                 transparent_surface.fill((0, 0, 0, 163))  # 128 für 50% Transparenz
                 screen.blit(transparent_surface, (-100, -100))
                 font = pygame.font.Font(None, 72)
-                text = font.render("Game Over ... win Stuttgart!", True, (128, 0, 0))
+                text = font.render("Game Over ... ", True, (128, 0, 0))
                 text_rect = text.get_rect(center=(WIDTH // 2, (HEIGHT // 2) - 100))
                 screen.blit(text, text_rect)
                 if game_over_time is None:
@@ -454,16 +456,6 @@ def main():
                     # Begrenzen, damit die Geschwindigkeit nicht ins Unendliche steigt und das Intervall nicht negativ wird
                     ENEMY_SPEED = min(10, ENEMY_SPEED)
                     ENEMY_INTERVAL = max(10, ENEMY_INTERVAL)
-
-            if game_over:
-                    if game_over_time is None:
-                        game_over_time = time.time()
-                    if time.time() - game_over_time > 3:
-                        running = False  # Setze den Zustand des Spiels auf False, um die Schleife zu beenden
-                        player_name = get_end_game_input(screen, clock, meisterschaften)
-                        if player_name:
-                            write_to_csv([[player_name, meisterschaften]], "spieler_statistiken.csv")  # Spielerdaten in CSV-Datei speichern
-
 
             # Stuttgart international anzeigen, wenn mindestens ein Extraleben vorhanden ist
             if extra_lives > 0:

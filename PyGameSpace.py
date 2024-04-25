@@ -12,6 +12,12 @@ import csv  # CSV-Bibliothek für das Lesen und Schreiben von CSV-Dateien
 import os  # OS-Bibliothek für betriebssystemspezifische Funktionen
 import sys  # Sys-Bibliothek für system-spezifische Parameter und Funktionen
 
+#Sound
+
+pygame.mixer.init()  # Initialisierung des Mixers
+pygame.mixer.music.load(r"C:\Users\leo.leberer\Desktop\Space_Invader_Sem2_LL\The-Alan-Parsons-Project-Sirius-_Original_ (1).wav")
+
+
 # Initialisierung von Pygame
 pygame.init()
 
@@ -272,6 +278,10 @@ def read_from_csv(filename):
 
 # Funktion Hauptspiel
 def main():
+
+    #Sound
+    pygame.mixer.music.play(-1)  # "-1" bedeutet, dass der Sound endlos wiederholt wird
+
     global ENEMY_SPEED, ENEMY_INTERVAL, pokals, last_pokal_time  # Globale Variablen
 
     # Spieler- und Projektileigenschaften initialisieren
@@ -498,7 +508,8 @@ if __name__ == "__main__":
     # Die Hauptfunktion aufrufen, um das Spiel zu starten
     main()
 
-
+#Sound 
+pygame.mixer.music.stop()
 
 # Ergebnisliste 
 # Funktion zum Anzeigen von Ergebnissen importieren und ausführen

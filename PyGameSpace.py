@@ -4,7 +4,7 @@
 
 
 # Import-Anweisungen für benötigte Module
-from ast import Import  # Import-Anweisung aus dem Modul ast, um Import-Statements zu repräsentieren
+
 import pygame  # Pygame-Bibliothek für die Spieleentwicklung
 import random  # Random-Bibliothek für die Generierung von Zufallszahlen
 import time  # Time-Bibliothek für Zeitfunktionen
@@ -33,7 +33,7 @@ PROJECTILE_SPEED = 2  # Geschwindigkeit des Schusses
 SHOOT_DELAY = 0.5  # Schussverzögerung in Sekunden
 FAUST_SIZE = 35  # Größe des Faust-Bildes
 MEISTERSCHALE_SIZE = 63  # Größe der Meisterschale
-MEISTERSCHALE_INTERVAL = 5  # Intervall, in dem eine Meisterschale erscheint
+MEISTERSCHALE_INTERVAL = 3 # Intervall, in dem eine Meisterschale erscheint
 
 # Geschwindigkeitszunahme der Feinde
 enemy_speed_increment = 0.0001  
@@ -89,7 +89,9 @@ def show_instructions():
         "3. Berühren Sie die Meisterschale, um eine Meisterschaft zu gewinnen.",
         "    Die Anzahl der gewonnenen Meisterschaften wird rechts oben angezeigt, sowie durch die Sterne über dem Wappen.",
         "4. Berühren Sie einen Gegner, so haben sie das Spiel verloren.",
-        "5. Können Sie den DFB- oder den CL- Pokal gewinnen, so erhalten sie ein Extraleben."
+        "5. Können Sie den DFB- oder den CL- Pokal gewinnen, so erhalten sie ein Extraleben. -> Stuttgart international ;) ",
+        "6. Mit der Taste P könenn Sie das Spiel pausieren.",
+        "7. Nach Spielende können Sie Ihren Namen eintragen und die Spielstandliste einsehen."
     ]
     y = 100  # Vertikale Position für den Text
     for line in instructions:
